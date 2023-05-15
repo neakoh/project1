@@ -1,0 +1,526 @@
+/* Leaflet */
+html, body {
+    height: 100%;
+    width:100%;
+    margin: 0;
+}
+.leaflet-container {
+    max-width: 100%;
+    max-height: 100%;
+    z-index:0;
+}
+#map{
+    width: 100%; 
+    height:100%; 
+    z-index: 0;
+    visibility: hidden;
+}
+/*Enter Screen*/
+#enterDiv{
+    visibility: hidden;
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    background-color:white;
+    opacity:0%;
+    position:absolute;
+    display:flex;
+    flex-direction:column;
+    align-items: center;
+    width:100%;
+    height:auto;
+    z-index:1000;
+    top:40%;
+    animation:0.5s fadeOutEnterDiv;
+}
+#enterDiv.fadeIn{
+    opacity: 80%;
+    animation:0.5s fadeInEnterDiv;
+}
+#enterButton{
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    position:relative;
+    z-index:1000;
+    padding:8px 20px;
+    border:0px;
+    border-radius:15px;
+    background-color: grey;
+    font-size: 20px;  
+    margin-top:15px;
+    color:white;
+}
+#onLoadLocation{
+    margin-top:10px;
+    margin-bottom:10px;
+    text-align:center;
+    position:relative;
+    max-width:200px;
+
+}
+#refreshButton{
+    text-decoration: underline;
+    text-underline-position: under;
+    border: 0px;
+    background-color:white;
+    border-radius: 5px; 
+    width:auto;
+}
+/* Overlay */
+#overlay{    
+    visibility:hidden;
+    position:absolute;
+    display:flex;
+    height:auto;
+    width:100%;
+}
+
+/*Navbar*/
+#nav{
+    position:relative;
+    z-index: 1000;
+    margin: 10px;
+    left:-400px;
+}
+#nav.show{
+    left:0px;
+    animation: 1s navShow;
+}
+#countryDropDown{
+    z-index: 1000;
+    background-color: white;
+    padding: 5px;
+    border: 0px;
+    border-radius: 10px; 
+    width:210px;
+}
+.navOptions{
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    z-index:1000;
+    background-color: white;
+    padding: 5px;
+    border: 0px;
+    border-radius: 10px; 
+    width:auto;
+    margin: 2px;
+}
+#menuToggle{
+    width:50px;
+    animation: 0.5s menuOff;
+}
+#menuToggle.on{
+    color:white;
+    background-color:grey;
+    animation: 0.5s menuOn;
+}
+
+/* Info Panel */
+#infoPanel{
+    position:absolute;
+    top:45px;
+    margin-left: 12px;
+    display:flex;
+    z-index:1000;
+    width:100%;
+    height:100%;
+    border: 0px;
+    border-radius: 10px; 
+    max-width:312px;
+}
+.hideButton{
+    visibility: hidden;
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    color:white;
+    z-index:1000;
+    position:absolute;
+    right:0px;
+    background-color: grey;
+    margin: 5px;
+    border:0px;
+    border-radius:10px; 
+    opacity: 80%;
+    width:auto;
+}
+#cityAlert{
+    visibility:hidden;
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    color:white;
+    z-index:1000;
+    position:absolute;
+    top:40px;
+    left:-300px;
+    background-color: grey;
+    margin: 10px;
+    padding:5px;
+    font-size:14px;
+    border:0px;
+    border-radius:10px; 
+    opacity: 90%;
+    width:auto;
+    animation: 1s cityAlertHide
+}
+#cityAlert.show{
+    left:60px;
+    animation:0.5s cityAlertShow;
+}
+
+@keyframes cityAlertShow{
+    from{
+        left:-300px;
+    }
+    to{
+        left:60px;
+    }
+}
+@keyframes cityAlertHide{
+    from{
+        left:60px;
+    }
+    to{
+        left:-300px;
+    }
+}
+
+/* button nav */
+#buttonContainer{
+    position: absolute;
+    display:flex;
+    flex-direction:column;
+    align-items: center;
+    height: auto;
+    width: 50px;
+    border-radius: 10px 10px 30px 30px;
+    top: -350px;
+    animation: 1s menuHide;
+}
+#buttonContainer.show{
+    top:0px;
+    animation: 1s menuShow;
+}
+#navTab{
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    margin: 5px;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items: center;
+    height:5px;
+    width:80%;
+    border-radius:10px;
+    background-color:lightgrey;
+}
+#navigationButtons{
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    position: relative;
+    display:flex;
+    flex-direction:column;
+    align-items: center;
+    justify-content: space-around;
+    background-color:grey;
+    margin:5px;
+    width: 100%;
+    height:auto;
+    border: 0px;
+    border-radius: 10px 10px 30px 30px;
+    z-index:200;
+}
+#cityButtons{
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    position: relative;
+    display:flex;
+    flex-direction:column;
+    align-items: center;
+    justify-content: space-around;
+    background-color:grey;
+    margin:10px;
+    width: 100%;
+    height:auto;
+    border: 0px;
+    border-radius: 30px;
+    top:-120px;
+    z-index:0;
+    animation:0.5s hideCityButtons;
+}
+#cityButtons.show{
+    top:0px;
+    animation:0.5s showCityButtons;
+}
+.buttons{
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    opacity:100%;
+    width:80%;
+    height:40px;
+    border-radius:30px;
+    border: 0px;
+    margin:5px;
+}
+.buttonIcons{
+    position: relative;
+    display:flex;
+    flex-direction:column;
+    align-items: center;
+    justify-content: space-around;
+    bottom: 1px;
+    left:-6px;
+    width:40px;
+    height:40px;
+}
+#generalButton{
+    animation: 0.5s button-off;
+}
+#generalButton.on{
+    background-color:grey;
+    animation: 0.5s button-on;
+}
+#financialButton{
+    animation: 0.5s button-off;
+}
+#financialButton.on{
+    background-color:grey;
+    animation: 0.5s button-on;
+}
+#weatherButton{
+    animation: 0.5s button-off;
+}
+#weatherButton.on{
+    background-color:grey;
+    animation: 0.5s button-on;
+}
+#attractionsButton{
+    animation: 0.5s button-off;
+}
+#attractionsButton.on{
+    background-color:grey;
+    animation: 0.5s button-on;
+}
+
+#attractionDiv{
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    z-index:1000;
+    position:absolute;
+    background-color: grey;
+    border: 0px;
+    border-radius: 10px; 
+    width:auto;
+    margin: 10px;
+    bottom:-100px;
+    animation: 0.5s checklistHide;
+    display:flex;
+    flex-direction:row;
+    justify-content: space-around;
+    visibility:hidden;
+}
+#attractionDiv.show{
+    bottom:0px;
+    animation: 0.5s checklistShow;
+}
+.attractionSelector{
+    margin: 5px;
+    position:relative;
+    border-radius: 5px;
+    border:0px;
+    background-color:white;
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    width:30px;
+    height:30px;
+    animation: 0.5s button-off;
+}
+.checked{
+    background-color:grey;
+    animation: 0.1s button-on
+}
+.checkIcon{
+    width:20px;
+    height:20px;
+    display:flex;
+}
+/* Info display*/
+.title{
+    text-align:center;
+    font-weight:bolder;
+}
+.display{
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    visibility: hidden;
+    background-color:white;
+    position:absolute;
+    z-index:1000;
+    height: auto;
+    left:-400px;
+    border: 0px;
+    border-radius: 10px;
+    width:92%;
+    max-width:400px;
+    margin-top: 6px;
+    animation: 1s infoDisplayHide;
+}
+.display.show{
+    left:60px;
+    animation: 1s infoDisplayShow;
+}
+.table{
+    width:100%;
+}
+
+/* Weather */
+.icon{
+    width: 20px;
+    height:20px;
+}
+
+/* Currency Converter */
+#convertAmount{
+    font-size:12px;
+    width:100px;
+    background-color:white;
+    border: 1px solid black;
+    border-radius: 5px;
+}
+#convertButton{
+    font-size:12px;
+    z-index:1000;
+    background-color:white;
+    border:1px solid black;
+    border-radius: 5px; 
+}
+
+
+
+/* Info panel buttons */
+@keyframes button-off{
+    from{
+        background-color: grey;
+    }
+    to{
+        background-color:white;
+    }
+}
+@keyframes button-on{
+    from{
+        background-color:white;
+    }
+    to{
+        background-color:grey;
+    }
+}
+/* Top of screen nav */
+@keyframes navShow {
+    from{
+        left:-400px
+    }
+    to{
+        left:0px;
+    }
+}
+/* Menu Button */
+@keyframes menuButtonOn{
+    from{
+        color:black;
+        background-color: white;
+    }
+    to{
+        color:white;
+        background-color:grey;
+    }
+}
+@keyframes menuButtonOff{
+    from{
+        color:white;
+        background-color: grey;
+    }
+    to{
+        color:black;
+        background-color:white;
+    }
+}
+/* Button Menu */
+@keyframes menuShow{
+    from{
+        top:-350px
+    }
+    to{
+        top:0px;
+    }
+}
+@keyframes menuHide{
+    from{
+        top:0px
+    }
+    to{
+        top:-350px;
+    }
+}
+/* Enter div */
+@keyframes fadeInEnterDiv{
+    from{
+        opacity:0%;
+    }
+    to{
+        opacity:80%;
+    }
+}
+@keyframes fadeOutEnterDiv{
+    from{
+        opacity:80%;
+    }
+    to{
+        opacity:0%;
+    }
+}
+/* Weather alert */
+@keyframes weatherAlertShow{
+    from{
+        left:-350px
+    }
+    to{
+        left:60px;
+    }
+}
+/* City Buttons*/
+@keyframes showCityButtons{
+    from{
+        top:-120px;
+    }
+    to{
+        top:0px;
+    }
+}
+@keyframes hideCityButtons{
+    from{
+        top:0px;
+    }
+    to{
+        top:-120px;
+    }
+}
+/*Info Display*/
+@keyframes infoDisplayShow{
+    from{
+        left:-400px
+    }
+    to{
+        left:60px;
+    }
+}
+@keyframes infoDisplayHide{
+    from{
+        left:60px
+    }
+    to{
+        left:-400px;
+    }
+}
+/*Attraction Div*/
+@keyframes checklistShow{
+    from{
+        bottom:-100px
+    }
+    to{
+        bottom:0px;
+    }
+}
+@keyframes checklistHide{
+    from{
+        bottom:0px
+    }
+    to{
+        bottom:-100px;
+    }
+}
