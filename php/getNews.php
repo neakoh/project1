@@ -4,9 +4,8 @@
 	error_reporting(E_ALL);
 
 	$executionStartTime = microtime(true);
-	$url= 'https://api.api-ninjas.com/v1/city?country=' . $_REQUEST['countryCode'] . '&limit=20';
+	$url= 'https://newsdata.io/api/1/news?apikey=pub_22361b9931eeaf26a4aa5ee8c193ab6d96fd3&language=en&country=' . $_REQUEST['country'] . '&category=' . $_REQUEST['category'];
     $headers= ['X-Api-Key: 1h/rDDDW49K8cWz+sbiGxA==jz5sY7nWJRvXcBeS'];
-
 	$ch = curl_init();
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);

@@ -4,11 +4,8 @@
 	error_reporting(E_ALL);
 
 	$executionStartTime = microtime(true);
-	$url= 'https://api.api-ninjas.com/v1/city?country=' . $_REQUEST['countryCode'] . '&limit=20';
-    $headers= ['X-Api-Key: 1h/rDDDW49K8cWz+sbiGxA==jz5sY7nWJRvXcBeS'];
-
+	$url= 'https://app.ticketmaster.com/discovery/v2/events.json?apikey=rHdlWqI13SYNpdtiRkaquoSFEXJI1RgD&city=' . $_REQUEST['city'] . '&keyword=' . $_REQUEST['category'] . '&startDateTime=' . $_REQUEST['date'] . 'T00:00:00Z&sort=date,asc';
 	$ch = curl_init();
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_URL,$url);
@@ -27,5 +24,3 @@
 	header('Content-Type: application/json; charset=UTF-8');
 
 	echo json_encode($output); 
-
-?>
