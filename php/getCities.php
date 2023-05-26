@@ -4,7 +4,7 @@
 	error_reporting(E_ALL);
 
 	$executionStartTime = microtime(true);
-	$url= 'https://api.api-ninjas.com/v1/city?country=' . $_REQUEST['countryCode'] . '&limit=15';
+	$url= 'https://api.api-ninjas.com/v1/city?country=' . $_REQUEST['countryCode'] . '&limit=20';
     $headers= ['X-Api-Key: 1h/rDDDW49K8cWz+sbiGxA==jz5sY7nWJRvXcBeS'];
 
 	$ch = curl_init();
