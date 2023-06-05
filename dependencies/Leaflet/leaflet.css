@@ -346,10 +346,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
 /* layers control */
 
 .leaflet-control-layers {
-	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	right:-100px;
 	background: #fff;
 	border-radius: 5px;
 	}
+.leaflet-control-layers.show{
+	right:0px;
+	animation: 1s layerControlShow linear
+}
+@keyframes layerControlShow {
+	from{
+		right:-100px;
+	}
+	to{
+		right:0px;
+	}
+}
 .leaflet-control-layers-toggle {
 	background-image: url(images/layers.png);
 	width: 36px;
@@ -360,9 +372,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	background-size: 26px 26px;
 	}
 .leaflet-touch .leaflet-control-layers-toggle {
-	width: 44px;
-	height: 44px;
+	width: 30px;
+	height: 30px;
 	}
+
+@media screen and (min-width: 450px){
+	.leaflet-touch .leaflet-control-layers-toggle{
+		width:40px;
+		height:40px;
+	}
+}
 .leaflet-control-layers .leaflet-control-layers-list,
 .leaflet-control-layers-expanded .leaflet-control-layers-toggle {
 	display: none;
@@ -393,7 +412,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	}
 .leaflet-control-layers-separator {
 	height: 0;
-	border-top: 1px solid #ddd;
 	margin: 5px -10px 5px -6px;
 	}
 

@@ -4,8 +4,7 @@
 	error_reporting(E_ALL);
 
 	$executionStartTime = microtime(true);
-    $country = str_replace(' ', '%20', $_REQUEST['country']);
-	$url= 'https://api.api-ninjas.com/v1/country?name=' . $country;
+	$url= 'https://api.api-ninjas.com/v1/country?name=' . $_REQUEST['countryCode'];
     $headers= ['X-Api-Key: 1h/rDDDW49K8cWz+sbiGxA==jz5sY7nWJRvXcBeS'];
 	$ch = curl_init();
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);

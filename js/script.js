@@ -1,12 +1,18 @@
+/*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Leaflet components =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
 const map = L.map('map', { zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false}).setView([0,0], 2);
-var tiles = L.tileLayer('https://maptiles.p.rapidapi.com/en/map/v1/{z}/{x}/{y}.png?rapidapi-key=650a4aee3dmshcbae477804e985dp1d43b8jsnc80d07159f68', {
-	attribution: '&copy; <a href="http://www.maptilesapi.com/">MapTiles API</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-	apikey: '<650a4aee3dmshcbae477804e985dp1d43b8jsnc80d07159f68>',
-	maxZoom: 19
+var openstreetTile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	maxZoom: 19,
+	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
-
-
-// Feature Groups
+var Stadia_AlidadeSmoothDark = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+	maxZoom: 20,
+	attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a>'
+});
+var baseMaps = {
+    'OpenStreetMap': openstreetTile,
+    'Dark Mode': Stadia_AlidadeSmoothDark
+}
+var layerControl = L.control.layers(baseMaps).addTo(map);
 var countryBorder = new L.FeatureGroup().addTo(map);
 var cityGroup = new L.FeatureGroup().addTo(map)
 var attractionMarkers = L.markerClusterGroup({
@@ -14,18 +20,17 @@ var attractionMarkers = L.markerClusterGroup({
 	disableClusteringAtZoom: 15,
 }).addTo(map);
 var airportLayer = new L.FeatureGroup().addTo(map);
-
 var accommodation = new L.FeatureGroup().addTo(attractionMarkers);
 var natural = new L.FeatureGroup().addTo(attractionMarkers);
 var catering = new L.FeatureGroup().addTo(attractionMarkers);
 var tourism = new L.FeatureGroup().addTo(attractionMarkers);
 var entertainment = new L.FeatureGroup().addTo(attractionMarkers);
 
-tiles.on('load', function(){
+/*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= On Load =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
+openstreetTile.on('load', function(){
     $('#map').css({'visibility':'visible'});
     $('#enterDiv').css({'visibility':'visible'}).addClass('fadeIn');
 })
-
 $(window).on('load', function(){
     function success(pos) {
         lat = pos.coords.latitude;
@@ -36,13 +41,14 @@ $(window).on('load', function(){
     }
     navigator.geolocation.getCurrentPosition(success);
 })
-// Variables
+
+/*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Variables =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
+var localCurrency = ""
 var currentLocation = "";
 var countryCode = "";
 var localCurrency = "";
 var lat = 0;
 var lng = 0;
-var currentMenu = "";
 var bounds = [];
 var cityName = "";
 var citylat = 0;
@@ -50,20 +56,77 @@ var citylng = 0;
 var checked = [];
 var newsCategory ='top';
 var citiesRendered;
-// Populate dropdown list 
-const populateCountries = () => {
+
+/*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+-                                                  Functions
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
+/*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Info Panel Buttons =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
+// General
+const getGeneral = () => {
     $.ajax({
-        url: "php/accessGeoJson.php",
+    url: "php/getCountryInfo.php",
+    type: 'POST', 
+    dataType: 'json',
+    data: {
+        countryCode: countryCode
+    },
+    success: function(result) {   
+        var population = result['data'][0]['population'] * 1000;
+        var formattedPop = population.toLocaleString('en-US');   
+        if(result.status.name == "ok"){
+            $('#region').html([result['data'][0]['region']]);
+            $('#capital').html([result['data'][0]['capital']]);
+            $('#population').html(formattedPop);
+            $('#maleLE').html('Male: ' + [result['data'][0]['life_expectancy_male']]);
+            $('#femaleLE').html('Female: ' + [result['data'][0]['life_expectancy_female']]);
+            $('.countryFlag').html($('<img>',{class: 'icon', src:'dependencies/Flag Icons/' + countryCode + '.svg'}))
+        }
+    },
+    error: function(error) {
+        console.error(error);
+    }
+    });
+}
+// Financial
+const getFinancial = () => {
+    $.ajax({
+    url: "php/getCountryInfo.php",
+    type: 'POST', 
+    dataType: 'json',
+    data: {
+        countryCode: countryCode
+    },
+    success: function(result) {   
+        if(result.status.name == "ok"){
+            $('#currency').html([result['data'][0]['currency']['name']]);
+            $('#currencyCode').html([result['data'][0]['currency']['code']]);
+            $('#GDP').html([result['data'][0]['gdp']]);
+            $('#GDPperCapita').html([result['data'][0]['gdp_per_capita']]);
+            $('#exchangeCurrency').val([result['data'][0]['currency']['code']])
+            if(!localCurrency){
+                localCurrency = $('#localCurrency').val(result['data'][0]['currency']['code'])
+            }
+        }
+    },
+    error: function(error) {
+        console.error(error);
+    }
+    });
+}
+// Currency
+const exchangeCurrency = () => {
+    $.ajax({
+        url: "php/exchangeCurrency.php",
         type: 'POST',
         dataType: 'json',
+        data: {
+            have: $('#localCurrency').val(),
+            want: $('#exchangeCurrency').val(),
+            amount: $('#convertAmount').val()
+        },
         success: function(result){
-            if(result){
-                const featuresArray = result['data'];
-                const countries = featuresArray.map(country => [country.properties.name, country.properties.iso_a2])
-                countries.sort();
-                for(i = 0; i < countries.length; i++){
-                    $('#countryDropDown').append($('<option></option>').html(countries[i][0]).val(countries[i][0]));
-                } 
+            if(result.status.name == "ok"){
+                $('#currencyResult').html(result['data']['new_amount'] + ' ' + $('#exchangeCurrency').val())
             }
         },
         error: function(error){
@@ -71,8 +134,170 @@ const populateCountries = () => {
         }
     });
 }
-// Draw Border
-const drawBorder = () => {
+// News
+const getNews = () => {
+    $.ajax({
+        url: "php/getNews.php",
+        type: 'POST', 
+        dataType: 'json',
+        data: {
+            country: countryCode,
+            category: newsCategory
+        },
+        success: function(result) {  
+            if(result.status.name == "ok"){
+                if(result.data.totalResults == 0){
+                    var noNews = $('<div></div>').css({'margin' : '10px'})
+                    noNews.append($('<h1 class="noResult"></h1>')).html('No articles found.')                  
+                    $('#newsList').append(noNews)
+                }
+                else{
+                    let articles = result.data.results
+                    console.log(articles);
+                    articles.forEach(article => {
+                        var listItem = $('<li class="multiListItem"></li>')
+                        var newsTitle = $('<div class="articleTitle">' + article.title + '.<div>')
+                        var newsSource = $('<p>Source: ' + article.source_id + '</p>')      
+                        listItem.append(newsTitle, newsSource)
+                        listItem.on('click', function(){
+                            var url = article.link
+                            window.open(url, '_blank').focus();
+                        })
+                        $('#newsList').append(listItem)
+                    })
+                }
+            }
+        },
+        error: function(error) {
+            console.error(error);
+        }
+    });
+}
+// Events
+const getEvents = () => {
+    $.ajax({
+        url: "php/getEvents.php",
+        type: 'POST', 
+        dataType: 'json',
+        data: {
+            city: cityName,
+            category: $('#eventCategory').val(),
+            date: $('#eventDate').val()
+        },
+        success: function(result) {
+            if(result.status.name == "ok"){
+                if(result.data.page.totalElements == 0){
+                    var noEvent = $('<div></div>').css({'margin' : '10px'})
+                    noEvent.append($('<h1></h1>')).html('No events found.')
+                    $('#eventList').append(noEvent)
+                }
+                else{
+                    let events = result.data._embedded.events
+                    events.forEach(event => {
+                        var listItem = $('<li class="multiListItem"><b>' + event.name + '</b></li>')          
+                        listItem.append('<p id="eventDesc">Date: ' + event.dates.start.localDate + ' Time: ' + event.dates.start.localTime + '</p>')                 
+                        listItem.on('click', function(){
+                            var url = event.url
+                            window.open(url, '_blank').focus();
+                        })
+                        $('#eventList').append(listItem)
+                    }) 
+                }
+            }
+        },
+        error: function(error) {
+            console.error(error);
+        }
+    });
+}
+// Weather
+const getWeather = (location) => {
+    $.ajax({
+        url: "php/getWeather.php",
+        type: 'POST', 
+        dataType: 'json',
+        data: {
+            countryCode: countryCode,
+            location: location
+        },
+        success: function(result) {
+            if(result){
+                currentMenu = "weather";
+                const cleanDate = (date) =>{
+                    let formattedDate = '';
+                    formattedDate += (date.slice(5).replace('-', '/'));
+                    return formattedDate;
+                }               
+                $('#currentWLocation').html(location +', Today: ');
+                $('#condition').html(result['data']['currentConditions']['conditions']);
+                $('#conditionIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['currentConditions']['icon'] + '.png'}))
+                $('#currentTemp').html(Math.floor(result['data']['currentConditions']['temp']) + '&deg;c')
+            
+                $('#dayOneIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][0]['icon'] + '.png'}))
+                $('#dayOneTemp').html(Math.floor(result['data']['days'][0]['temp']) + '&deg;c');
+                $('#dayOneDate').html(cleanDate(result['data']['days'][0]['datetime']));
+                $('#dayTwoIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][1]['icon'] + '.png'}))
+                $('#dayTwoTemp').html(Math.floor(result['data']['days'][1]['temp']) + '&deg;c');
+                $('#dayTwoDate').html(cleanDate(result['data']['days'][1]['datetime']));
+                $('#dayThreeIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][2]['icon'] + '.png'}))
+                $('#dayThreeTemp').html(Math.floor(result['data']['days'][2]['temp']) + '&deg;c');
+                $('#dayThreeDate').html(cleanDate(result['data']['days'][2]['datetime']));
+                $('#dayFourIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][3]['icon'] + '.png'}))
+                $('#dayFourTemp').html(Math.floor(result['data']['days'][3]['temp']) + '&deg;c');
+                $('#dayFourDate').html(cleanDate(result['data']['days'][3]['datetime']));
+                $('#dayFiveIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][4]['icon'] + '.png'}))
+                $('#dayFiveTemp').html(Math.floor(result['data']['days'][4]['temp']) + '&deg;c');
+                $('#dayFiveDate').html(cleanDate(result['data']['days'][4]['datetime']));
+                $('#daySixIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][5]['icon'] + '.png'}))
+                $('#daySixTemp').html(Math.floor(result['data']['days'][5]['temp']) + '&deg;c');
+                $('#daySixDate').html(cleanDate(result['data']['days'][5]['datetime']));
+                $('#daySevenIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][6]['icon'] + '.png'}))
+                $('#daySevenTemp').html(Math.floor(result['data']['days'][6]['temp']) + '&deg;c');
+                $('#daySevenDate').html(cleanDate(result['data']['days'][6]['datetime']));
+            }
+        },
+        error: function(error) {
+            console.error(error);
+        }
+    });
+}
+/*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Render Functions =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
+// Airports
+const renderAirports = (city, country) => {
+    $.ajax({
+        url: "php/getAirports.php",
+        type: 'POST', 
+        dataType: 'json',
+        data: {
+            city: city,
+            country: country
+        },
+        success: function(result) { 
+            let airports = result['data']
+            if(result.status.name == "ok"){
+                airports.forEach(airport => {
+                    var marker = L.ExtraMarkers.icon({
+                        icon: 'fa-plane',
+                        markerColor: 'gray',
+                        prefix: 'fa-solid'
+                    });
+                    var marker = L.marker([airport.latitude, airport.longitude], {icon: marker})
+                    .bindPopup('<b>' + airport.name + '</b><br>')
+                    marker.addTo(airportLayer)
+                    .on('click', function(){
+                        marker.openPopup();
+                    }) 
+                })
+
+            }
+        },
+        error: function(error) {
+            console.error(error);
+        }
+        });
+}
+// Border
+const renderBorder = () => {
     $.ajax({
         url: "php/accessGeoJson.php",
         type: 'POST',
@@ -82,7 +307,7 @@ const drawBorder = () => {
                 const featuresArray = result['data']
                 var index = -1;
                 featuresArray.find(function(item, i){
-                    if(item.properties.name === currentLocation){
+                    if(item.properties.iso_a2 === countryCode){
                         index = i;
                     }
                 });
@@ -92,9 +317,9 @@ const drawBorder = () => {
                                ? item.map(reverse) 
                                : item.reverse();
                 });
-                var polygon = L.polygon(reversedCoords, {color: 'white'});
+                var polygon = L.polygon(reversedCoords, {color: 'green', fillOpacity: '0.1'});
                 polygon.addTo(countryBorder)
-                
+                map.flyToBounds(countryBorder.getBounds());                            
             }
         },
         error: function(error){
@@ -102,92 +327,7 @@ const drawBorder = () => {
         }
     });
 }
-// Get current location
-const getCurrentLocation = () => {
-    $.ajax({
-        url: "php/getCountryCode.php",
-        type: 'POST',
-        dataType: 'json',
-        data: {
-            latitude: lat,
-            longitude: lng 
-        },
-        success: function(result){
-            if(result.status.name == "ok"){
-                countryCode = result['data']['countryCode'];
-                currentLocation = result['data']['countryName'];
-                $('#currentLocation1').html(currentLocation);
-                $('#enterButton').addClass('ready');
-                $('#enterLoader').remove();
-                // Entering App
-                $('#enterButton').on('click', function() {
-                    $('#enterDiv').removeClass('fadeIn');
-                    $('#nav').addClass('show');
-                    $('#overlay').css({"visibility" : "visible"});
-                    $('#attractionDiv').css({"visibility" : "visible"});
-                    map.dragging.enable();
-                    map.scrollWheelZoom.enable();
-                    populateCountries();
-                    // Snap to current location
-                    $.ajax({
-                        url: "php/getCountryCode.php",
-                        type: 'POST',
-                        dataType: 'json',
-                        data: {
-                            latitude: lat,
-                            longitude: lng 
-                        },
-                        success: function(result){
-
-                            if(result.status.name == "ok"){
-                                currentLocation = result['data']['countryName'];
-                                countryCode = result['data']['countryCode'];
-                                $.ajax({
-                                    url: "php/countrySelector.php",
-                                    type: 'POST', 
-                                    dataType: 'json',
-                                    data: {
-                                        country: currentLocation
-                                    },
-                                    success: function(result) {
-                                        var northeast = [result['data']['northeast']['lat'], result['data']['northeast']['lng']]
-                                        var southwest = [result['data']['southwest']['lat'], result['data']['southwest']['lng']]           
-                                        bounds = [northeast, southwest];
-
-                                        if(result.status.name == "ok"){
-                                            $('#enterDiv').remove();
-                                            $('#menuToggle').toggleClass('on');
-                                            $('#buttonContainer').toggleClass('show'); 
-                                            map.flyToBounds(bounds);
-                                            $('.currentLocation').html(currentLocation);
-                                            $('.countryFlag').html($('<img>',{class: 'icon', src:'dependencies/Flag Icons/' + countryCode + '.svg'}))
-                                            drawBorder()
-                                            renderCities()
-                                            setTimeout(function(){
-                                                $('#cityAlert').css({"visibility" : "visible"});
-                                                $('#cityAlert').addClass('show');
-                                            }, 1000)
-                                        }
-                                    },
-                                    error: function(error) {
-                                        console.error(error);
-                                    }
-                                });
-                            }
-                        },
-                        error: function(error){
-                            console.log(error);
-                        }
-                    });
-                });
-            }
-        },
-        error: function(error){
-            console.log(error);
-        }
-    });
-}
-// Render cities
+// Cities
 const renderCities = () => {
     $.ajax({
         url: "php/getCities.php",
@@ -207,21 +347,20 @@ const renderCities = () => {
                         prefix: 'fa-solid'
                     });
                     var marker = L.marker([city.latitude, city.longitude], {icon:marker})
-                    .bindPopup('City: ' + city.name + '<br> Population: ' + (city.population.toLocaleString('en-US')) + '<br>');
+                    .bindPopup('City: ' + city.name + '<br> Population: ' + city.population + '<br>');
                     marker.addTo(cityGroup)
-                    .on('click', function(){
+                    .on('click', function(){                      
                         citylat = city.latitude;
                         citylng = city.longitude;
+                        cityName = city.name;
+                        clearCityAttractions();
                         $('#cityButtons').addClass('show');
                         $('#attractionDiv').addClass('show');
                         $('#cityAlert').removeClass('show')
-                        marker.openPopup();
-                        clearValues();
-                        clearCityAttractions();
-                        map.flyTo([city.latitude, city.longitude], 10);
-                        cityName = city.name;
+                        marker.openPopup();                  
+                        map.flyTo([city.latitude, city.longitude], 10);                       
                         getWeather(cityName);
-                        getAirports(city.name, city.country);
+                        renderAirports(city.name, city.country);
                     })
                 })    
             }
@@ -231,8 +370,8 @@ const renderCities = () => {
         }
     });
 }
-// Get city attractions
-const getCityAttractions = (lat, lng, category, icon, colour) => {
+// City Attractions
+const renderCityAttractions = (lat, lng, category, icon, colour) => {
     $.ajax({
         url: "php/getAttractions.php",
         type: 'POST',
@@ -398,249 +537,24 @@ const getCityAttractions = (lat, lng, category, icon, colour) => {
         }
     });
 }
-// Get general data
-const getGeneral = () => {
+/*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Helper Functions =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
+// Get current location/Enter function
+const getCurrentLocation = () => {
     $.ajax({
-    url: "php/getCountryInfo.php",
-    type: 'POST', 
-    dataType: 'json',
-    data: {
-        country: $('.currentLocation').html()
-    },
-    success: function(result) {   
-        var population = result['data'][0]['population'] * 1000;
-        var formattedPop = population.toLocaleString('en-US');
-        
-        if(result.status.name == "ok"){
-            $('#region').html([result['data'][0]['region']]);
-            $('#capital').html([result['data'][0]['capital']]);
-            $('#population').html(formattedPop);
-            $('#maleLE').html([result['data'][0]['life_expectancy_male']]);
-            $('#femaleLE').html([result['data'][0]['life_expectancy_female']]);
-        }
-    },
-    error: function(error) {
-        console.error(error);
-    }
-    });
-}
-// Get financial data
-const getFinancial = () => {
-    $.ajax({
-    url: "php/getCountryInfo.php",
-    type: 'POST', 
-    dataType: 'json',
-    data: {
-        country: $('.currentLocation').html()
-    },
-    success: function(result) {   
-        if(result.status.name == "ok"){
-            $('#currency').html([result['data'][0]['currency']['name']]);
-            $('#currencyCode').html([result['data'][0]['currency']['code']]);
-            $('#GDP').html([result['data'][0]['gdp']].toLocaleString('en-US'));
-            $('#GDPperCapita').html([result['data'][0]['gdp_per_capita']].toLocaleString('en-US'));
-            $('#exchangeCurrency').html([result['data'][0]['currency']['code']])
-        }
-    },
-    error: function(error) {
-        console.error(error);
-    }
-    });
-}
-// Get news
-const getNews = () => {
-    $.ajax({
-        url: "php/getNews.php",
-        type: 'POST', 
-        dataType: 'json',
-        data: {
-            country: countryCode,
-            category: newsCategory
-        },
-        success: function(result) {  
-            if(result.status.name == "ok"){
-                if(result.data.status == 'error'){
-                    var noNews = $('<div></div>').css({'margin' : '10px'})
-                        noNews.append($('<h1></h1>')).html('No articles found.').
-                        css({
-                            'padding' : '5px',
-                            'margin' : '5px',
-                            'font-weight' : 'bold'
-                        })
-                    $('#newsList').append(noNews)
-                }
-                else{
-                    let articles = result.data.results
-                    articles.forEach(article => {
-                        var listItem = $('<li></li>').css({'margin' : '10px'})
-                        listItem.append($('<h1></h1>')).html(article.title + '.').
-                        css({
-                            'padding' : '5px',
-                            'margin' : '5px',
-                            'font-weight' : 'bold'
-                        })
-                        listItem.on('click', function(){
-                            var url = article.link
-                            window.open(url, '_blank').focus();
-                        })
-                        $('#newsList').append(listItem)
-                    })
-                }
-            }
-        },
-        error: function(error) {
-            console.error(error);
-        }
-    });
-}
-// Get cityinfo
-const getEvents = () => {
-    $.ajax({
-        url: "php/getEvents.php",
-        type: 'POST', 
-        dataType: 'json',
-        data: {
-            city: cityName,
-            category: $('#eventCategory').val(),
-            date: $('#eventDate').val()
-        },
-        success: function(result) {
-            if(result.status.name == "ok"){
-                if(result.data == null){
-                    var noEvent = $('<div></div>').css({'margin' : '10px'})
-                    noEvent.append($('<h1></h1>')).html('No events found.').
-                    css({
-                        'padding' : '5px',
-                        'margin' : '5px',
-                        'font-weight' : 'bold'
-                    })
-                $('#eventList').append(noEvent)
-                }
-                else{
-                    let events = result.data._embedded.events
-                    events.forEach(event => {
-                        var listItem = $('<li>' + event.name + '</li>').css(
-                            {
-                                'font-weight': 'bold',
-                                'height':'auto',
-                                'margin':'10px'
-                            }
-                        )                   
-                        listItem.append('<p id="eventDesc">Date: ' + event.dates.start.localDate + ' Time: ' + event.dates.start.localTime + '</p>')                 
-                        listItem.on('click', function(){
-                            var url = event.url
-                            window.open(url, '_blank').focus();
-                        })
-                        $('#eventList').append(listItem)
-                    }) 
-                }
-            }
-        },
-        error: function(error) {
-            console.error(error);
-        }
-    });
-}
-// Get weather
-const getWeather = (location) => {
-    $.ajax({
-        url: "php/getWeather.php",
-        type: 'POST', 
-        dataType: 'json',
-        data: {
-            location: location
-        },
-        success: function(result) {
-            if(result){
-                currentMenu = "weather";
-                const cleanDate = (date) =>{
-                    let formattedDate = '';
-                    formattedDate += (date.slice(5).replace('-', '/'));
-                    return formattedDate;
-                }               
-                $('#currentWLocation').html(result['data']['resolvedAddress']);
-                $('.countryFlag').html($('<img>',{class: 'icon', src:'dependencies/Flag Icons/' + countryCode + '.svg'}))
-                $('#condition').html(result['data']['currentConditions']['conditions'])
-                $('#conditionIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['currentConditions']['icon'] + '.png'}))
-                $('#currentTemp').html(result['data']['currentConditions']['temp'] + ' ℃')
-                $('#feelsLike').html(result['data']['currentConditions']['feelslike'] + ' ℃')
-            
-                $('#dayOneIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][0]['icon'] + '.png'}))
-                $('#dayOneTemp').html(result['data']['days'][0]['temp'] + ' ℃');
-                $('#dayOneDate').html(cleanDate(result['data']['days'][0]['datetime']));
-                $('#dayTwoIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][1]['icon'] + '.png'}))
-                $('#dayTwoTemp').html(result['data']['days'][1]['temp'] + ' ℃');
-                $('#dayTwoDate').html(cleanDate(result['data']['days'][1]['datetime']));
-                $('#dayThreeIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][2]['icon'] + '.png'}))
-                $('#dayThreeTemp').html(result['data']['days'][2]['temp'] + ' ℃');
-                $('#dayThreeDate').html(cleanDate(result['data']['days'][2]['datetime']));
-                $('#dayFourIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][3]['icon'] + '.png'}))
-                $('#dayFourTemp').html(result['data']['days'][3]['temp'] + ' ℃');
-                $('#dayFourDate').html(cleanDate(result['data']['days'][3]['datetime']));
-                $('#dayFiveIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][4]['icon'] + '.png'}))
-                $('#dayFiveTemp').html(result['data']['days'][4]['temp'] + ' ℃');
-                $('#dayFiveDate').html(cleanDate(result['data']['days'][4]['datetime']));
-                $('#daySixIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][5]['icon'] + '.png'}))
-                $('#daySixTemp').html(result['data']['days'][5]['temp'] + ' ℃');
-                $('#daySixDate').html(cleanDate(result['data']['days'][5]['datetime']));
-                $('#daySevenIcon').html($('<img>',{class: 'icon', src:'dependencies/Weather Icons/' + result['data']['days'][6]['icon'] + '.png'}))
-                $('#daySevenTemp').html(result['data']['days'][6]['temp'] + ' ℃');
-                $('#daySevenDate').html(cleanDate(result['data']['days'][6]['datetime']));
-            }
-        },
-        error: function(error) {
-            console.error(error);
-        }
-    });
-}
-// Get Airports
-const getAirports = (city, country) => {
-    $.ajax({
-        url: "php/getAirports.php",
-        type: 'POST', 
-        dataType: 'json',
-        data: {
-            city: city,
-            country: country
-        },
-        success: function(result) { 
-            let airports = result['data']
-            if(result.status.name == "ok"){
-                airports.forEach(airport => {
-                    var marker = L.ExtraMarkers.icon({
-                        icon: 'fa-plane',
-                        markerColor: 'gray',
-                        prefix: 'fa-solid'
-                    });
-                    var marker = L.marker([airport.latitude, airport.longitude], {icon: marker})
-                    .bindPopup('<b>' + airport.name + '</b><br>')
-                    marker.addTo(airportLayer)
-                    .on('click', function(){
-                        marker.openPopup();
-                    }) 
-                })
-
-            }
-        },
-        error: function(error) {
-            console.error(error);
-        }
-        });
-}
-// Exchange currency
-const exchangeCurrency = () => {
-    $.ajax({
-        url: "php/exchangeCurrency.php",
+        url: "php/getCountryCode.php",
         type: 'POST',
         dataType: 'json',
         data: {
-            have: $('#localCurrency').html(),
-            want: $('#exchangeCurrency').html(),
-            amount: $('#convertAmount').val()
+            latitude: lat,
+            longitude: lng 
         },
         success: function(result){
             if(result.status.name == "ok"){
-                $('#currencyResult').html(result['data']['new_amount'].toLocaleString('en-US') + ' ' + $('#exchangeCurrency').html())
+                countryCode = result['data']['countryCode'];
+                currentLocation = result['data']['countryName'];
+                $('.currentLocation').html(currentLocation);
+                $('#enterButton').addClass('ready');
+                $('#enterLoader').remove();               
             }
         },
         error: function(error){
@@ -648,7 +562,7 @@ const exchangeCurrency = () => {
         }
     });
 }
-// Clear city attractions
+// Clear City Attractions
 const clearCityAttractions = () => {
     accommodation.clearLayers();
     natural.clearLayers();
@@ -660,67 +574,124 @@ const clearCityAttractions = () => {
     checked = [];
     $('.attractionSelector').removeClass('checked');
 }
-// Clear table values
+// Clear Table Values
 const clearValues = () => {
-    $('.value').html("...");
     $('#currencyResult').html("");
     weatherName = "";
 }
-
-// Refresh current location
-$('#refreshButton').on('click', function() {
-    $('#currentLocation1').html('...');
-    getCurrentLocation();
-})
-// Country Selector
-$('#countryDropDown').on('change', function() { 
-    $('.buttons').removeClass('on');
-    $('#cityButtons').removeClass('show');
-    $('#attractionDiv').removeClass('show');
-    $('.display').removeClass('show');
-
-    clearCityAttractions();
-    currentLocation = $('#countryDropDown').val()
-    cityGroup.clearLayers();
-    countryBorder.clearLayers();
-    clearValues();
-    
+// Populate Countries
+const populateCountries = () => {
     $.ajax({
-        url: "php/countrySelector.php",
+        url: "php/accessGeoJson.php",
+        type: 'POST',
+        dataType: 'json',
+        success: function(result){
+            if(result){
+                const featuresArray = result['data'];
+                const countries = featuresArray.map(country => [country.properties.name, country.properties.iso_a2])
+                countries.sort();
+                for(i = 0; i < countries.length; i++){
+                    $('#countryDropDown').append($('<option></option>').html(countries[i][0]).val(countries[i][1]));
+                    $('#countryDropDown').val(countryCode)
+                } 
+            }
+        },
+        error: function(error){
+            console.log(error);
+        }
+    });
+}
+// Populate Financial
+const populateFinancial = () => {
+    $.ajax({
+        url: "php/accessCurrencyCodes.php",
         type: 'POST', 
         dataType: 'json',
-        data: {
-            country: $('#countryDropDown').val()
-        },
-        success: function(result) {
-            var northeast = [result['data']['northeast']['lat'], result['data']['northeast']['lng']]
-            var southwest = [result['data']['southwest']['lat'], result['data']['southwest']['lng']]
-            bounds = [northeast, southwest]
-            countryCode = [result['data'][0]['components']['ISO_3166-1_alpha-2']][0];
-
+        success: function(result) {   
             if(result.status.name == "ok"){
-                map.flyToBounds(bounds);
-                $('.currentLocation').html($('#countryDropDown').val());
-                $('.countryFlag').html($('<img>',{class: 'icon', src:'dependencies/Flag Icons/' + result['data'][0]['components']['ISO_3166-1_alpha-2'] + '.svg'}))   
-                drawBorder()       
-                renderCities() 
-                if(currentMenu === "finance"){
-                    getFinancial();
-                }
-                else{
-                    getGeneral();
-                }
+                const currencies = result['data']
+                for(i = 0; i < currencies.length; i++){
+                    $('#localCurrency').append($('<option></option>').html(currencies[i]['code']).val(currencies[i]['code']));
+                    $('#exchangeCurrency').append($('<option></option>').html(currencies[i]['code']).val(currencies[i]['code']));
+                } 
             }
         },
         error: function(error) {
             console.error(error);
         }
     });
+}
+/*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+-                                               Utility Features
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
+// Entering App
+$('#enterButton').on('click', function() {                
+    $('#enterDiv').removeClass('fadeIn');      
+    $('#enterDiv').remove();
+    $('#nav').addClass('show');
+    $('#buttonContainer').addClass('show');
+    $('.leaflet-control-layers').addClass('show');                   
+    map.dragging.enable();
+    map.scrollWheelZoom.enable();
+    populateCountries();
+    populateFinancial();                                                                                                                  
+    getGeneral();
+    getFinancial();
+    getNews();  
+    renderBorder()   
+    renderCities()                           
+    setTimeout(function(){
+        $('#cityAlert').css({"visibility" : "visible"});
+        $('#cityAlert').addClass('show');
+    }, 1000)                   
 });
-// Accessing country information
+// Country Selector
+$('#countryDropDown').on('change', function() { 
+    countryCode = $('#countryDropDown').val()
+    cityGroup.clearLayers();
+    countryBorder.clearLayers();
+    $('.buttons').removeClass('on');
+    $('#cityButtons').removeClass('show');
+    $('#attractionDiv').removeClass('show');
+    $('.display').removeClass('show');
+    $('.currentLocation').html($('#countryDropDown :selected').text());
+    $('.countryFlag').html($('<img>',{class: 'icon', src:'dependencies/Flag Icons/' + countryCode + '.svg'})) 
+    clearCityAttractions();    
+    clearValues();
+    getGeneral();
+    getFinancial();
+    populateFinancial();  
+    renderBorder();    
+    renderCities(); 
+});
+// Refresh current location
+$('#refreshButton').on('click', function() {
+    $('#currentLocation1').html('...');
+    getCurrentLocation();
+})
+// Hide button
+$('.hideButton').on('click', function(){
+    $('.display').removeClass('show');
+    $('.buttons').removeClass('on');
+    $('.hideButton').css({'visibility': 'hidden'})
+})
+/*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Info Panel Buttons =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
+// Re-center
+$('#homeButton').on('click', function(){
+    if(citiesRendered == false){
+       renderCities(); 
+    }
+    clearCityAttractions();
+    $('.buttons').removeClass('on');
+    $('.display').removeClass('show');
+    $('#cityButtons').removeClass('show');
+    $('#attractionDiv').removeClass('show');
+    $('.attractionSelector').removeClass('checked');
+    map.flyToBounds(countryBorder.getBounds());
+    
+})
+// General Info
 $('#generalButton').on('click', function(){
-    currentMenu = "general";
-    $('.multiList').empty();
     $('.display').addClass('show');
     $('#generalButton').addClass('on');
     $('#newsButton').removeClass('on');
@@ -737,10 +708,8 @@ $('#generalButton').on('click', function(){
     $('.hideButton').css({'visibility': 'visible'});
     getGeneral();
 })
-// Accessing country financials info
+// Financials
 $('#financialButton').on('click', function(){
-    currentMenu = "finance";
-    $('.multiList').empty();
     $('.display').addClass('show');
     $('#financialButton').addClass('on');
     $('#newsButton').removeClass('on');
@@ -755,10 +724,13 @@ $('#financialButton').on('click', function(){
     $('#weatherDisplay').css({'visibility': 'hidden'});
     $('#generalDisplay').css({"visibility" : "hidden"});
     $('.hideButton').css({'visibility': 'visible'});
-    $('#localCurrency').html('GBP')
     getFinancial();
 })
-// Accessing news
+$('#convertButton').on('click', function(){
+    $('#currencyResult').html('...');
+    exchangeCurrency();
+})
+// Accessing News
 $('#newsButton').on('click', function(){
     $('.multiList').empty();
     $('.display').addClass('show');
@@ -777,11 +749,18 @@ $('#newsButton').on('click', function(){
     $('.hideButton').css({'visibility': 'visible'});
     getNews();
 })
-// Exchange Currency
-$('#convertButton').on('click', function(){
-    exchangeCurrency();
+$('#newsCategory').on('change', function(){
+    $('.multiList').empty();
+    category = $('#newsCategory').val();
+    getNews();
 })
-// Weather Button
+// Wikipedia
+$('#wikiButton').on('click', function(){
+    var country = currentLocation.replace(' ', '_');
+    var url = 'https://en.wikipedia.org/wiki/' + country;
+    window.open(url, '_blank').focus();
+})
+// Weather
 $('#weatherButton').on('click', function(){
     $('.multiList').empty();
     $('.display').addClass('show');
@@ -800,8 +779,9 @@ $('#weatherButton').on('click', function(){
     $('.hideButton').css({'visibility': 'visible'});
     getWeather(cityName);
 })
-// Weather Button
+// Accessing Events
 $('#eventButton').on('click', function(){
+    $('#eventDate').val(new Date().toISOString().substr(0, 10));
     $('.multiList').empty();
     $('.display').addClass('show');
     $('#eventButton').addClass('on');
@@ -810,6 +790,7 @@ $('#eventButton').on('click', function(){
     $('#financialButton').removeClass('on');
     $('#weatherButton').removeClass('on');
     $('#cityAlert').removeClass('show')
+    getEvents()
 
     $('#eventDisplay').css({'visibility':'visible'});
     $('#newsDisplay').css({'visibility':'hidden'});
@@ -818,41 +799,23 @@ $('#eventButton').on('click', function(){
     $('#generalDisplay').css({"visibility" : "hidden"});
     $('.hideButton').css({'visibility': 'visible'});
 })
-// Hide button
-$('.hideButton').on('click', function(){
-    $('.display').removeClass('show');
-    $('.buttons').removeClass('on');
-    $('.hideButton').css({'visibility': 'hidden'})
+$('#eventSearch').on('click', function(){
+    $('.multiList').empty();
+    getEvents()
 })
-// Recenter button
-$('#reCenter').on('click', function(){
-    if(citiesRendered == false){
-       renderCities(); 
-    }
-    clearCityAttractions();
-    $('#cityButtons').removeClass('show');
-    $('#attractionDiv').removeClass('show');
-    $('.attractionSelector').removeClass('checked');
-    map.flyToBounds(bounds);
-    
-})
-// Wikipedia link
-$('#wikiButton').on('click', function(){
-    var country = currentLocation.replace(' ', '_');
-    var url = 'https://en.wikipedia.org/wiki/' + country;
-    window.open(url, '_blank').focus();
-})
-// Attraction select
+// Attraction Selector
 $('.attractionSelector').on('click', function(){      
     citiesRendered = false;
     switch(this.id){
         case 'accommodation':
             if(!checked.includes('accommodation')){
-                getCityAttractions(citylat, citylng, this.id, 'fa-bed', 'black')
+                renderCityAttractions(citylat, citylng, this.id, 'fa-bed', 'black')
                 $(('#'+this.id)).addClass('checked');
                 checked.push('accommodation');
                 cityGroup.clearLayers();
-                map.flyTo([citylat, citylng], 12, {animate:true});
+                if(map.getZoom() !== 12){
+                    map.flyTo([citylat, citylng], 12, {animate:true});  
+                }              
             }
             else{
                 $(('#'+this.id)).removeClass('checked');
@@ -863,11 +826,13 @@ $('.attractionSelector').on('click', function(){
         break;
         case 'natural':
             if(!checked.includes('natural')){                
-                getCityAttractions(citylat, citylng, this.id, 'fa-leaf', 'green')
+                renderCityAttractions(citylat, citylng, this.id, 'fa-leaf', 'green')
                 $(('#'+this.id)).addClass('checked');
                 checked.push('natural');
                 cityGroup.clearLayers();
-                map.flyTo([citylat, citylng], 12, {animate:true});
+                if(map.getZoom() !== 12){
+                    map.flyTo([citylat, citylng], 12, {animate:true});  
+                }
             }
             else{              
                 $(('#'+this.id)).removeClass('checked');
@@ -878,11 +843,13 @@ $('.attractionSelector').on('click', function(){
         break;
         case 'catering':
             if(!checked.includes('catering')){              
-                getCityAttractions(citylat, citylng, this.id, 'fa-utensils', 'yellow')
+                renderCityAttractions(citylat, citylng, this.id, 'fa-utensils', 'yellow')
                 $(('#'+this.id)).addClass('checked'); 
                 checked.push('catering'); 
                 cityGroup.clearLayers();
-                map.flyTo([citylat, citylng], 12, {animate:true});
+                if(map.getZoom() !== 12){
+                    map.flyTo([citylat, citylng], 12, {animate:true});  
+                }
             }
             else{
                 $(('#'+this.id)).removeClass('checked');
@@ -893,11 +860,13 @@ $('.attractionSelector').on('click', function(){
         break;
         case 'tourism':
             if(!checked.includes('tourism')){
-                getCityAttractions(citylat, citylng, this.id, 'fa-camera', 'blue')
+                renderCityAttractions(citylat, citylng, this.id, 'fa-camera', 'blue')
                 $(('#'+this.id)).addClass('checked');
                 checked.push('tourism');
                 cityGroup.clearLayers();
-                map.flyTo([citylat, citylng], 12, {animate:true});
+                if(map.getZoom() !== 12){
+                    map.flyTo([citylat, citylng], 12, {animate:true});  
+                }
             }
             else{
                 $(('#'+this.id)).removeClass('checked');
@@ -908,11 +877,13 @@ $('.attractionSelector').on('click', function(){
         break;
         case 'entertainment':
             if(!checked.includes('entertainment')){
-                getCityAttractions(citylat, citylng, this.id, 'fa-masks-theater', 'red')
+                renderCityAttractions(citylat, citylng, this.id, 'fa-masks-theater', 'red')
                 $(('#'+this.id)).addClass('checked');
                 checked.push('entertainment');
                 cityGroup.clearLayers();
-                map.flyTo([citylat, citylng], 12, {animate:true});
+                if(map.getZoom() !== 12){
+                    map.flyTo([citylat, citylng], 12, {animate:true});  
+                }
             }
             else{
                 $(('#'+this.id)).removeClass('checked');
@@ -924,26 +895,7 @@ $('.attractionSelector').on('click', function(){
     }
     
 })
-map.on('zoom', function(){
-    if(map.getZoom() === 8){
-        if(citiesRendered == false){
-            renderCities(); 
-         }
-        clearCityAttractions();
-        $('.display').removeClass('show');
-        $('.buttons').removeClass('on');
-        $('.hideButton').css({'visibility': 'hidden'})
-    }
-})
-$('#newsCategory').on('change', function(){
-    $('#newsList').empty();
-    category = $('#newsCategory').val();
-    getNews();
-})
-$('#eventSearch').on('click', function(){
-    $('.multiList').empty();
-    getEvents()
-})
+
 
 
 

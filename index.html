@@ -5,8 +5,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	
-	<title>Gazetteer</title>
-	
+	<title>Gazetteer</title>	
 	<link rel="shortcut icon" type="image/x-icon" href="dependencies/Icons/globe favicon.png" />
     <link rel="stylesheet" href="dependencies/Leaflet/leaflet.css"/>
     <link rel="stylesheet" href="dependencies/extraMarkers/css/leaflet.extra-markers.min.css">
@@ -35,7 +34,7 @@
             <table id="onLoadLocation">
                 <tr>
                     <td>Current Location: </td>
-                    <td id="currentLocation1"></td>
+                    <td class="currentLocation"></td>
                 </tr>
                 <tr>
                     <td>Not your location?</td>
@@ -49,20 +48,18 @@
         <div id="overlay">
         
             <div id="nav">
-                <button class="navOptions" id="menuToggle">Menu</button>
-
-                <select class="navOptions" id="countryDropDown">
-                    <option>Select Country: </option>
+                <select id="countryDropDown">
                 </select>
-
-                <button class="navOptions" id="reCenter">Re-Center</button>
             </div>
 
             <div id="infoPanel">
 
-                <div id="buttonContainer">       
-                    <div class="buttonHolder" id="navigationButtons">
-                        <div id="navTab"></div>
+                <div id="buttonContainer">      
+                    
+                    <div class="buttonHolder" id="navigationButtons">      
+                        <button class="buttons" id="homeButton">
+                            <img class="buttonIcons" src="dependencies\Icons\home.png">
+                        </button>       
                         <button class="buttons" id="generalButton">
                             <img class="buttonIcons" src="dependencies\Icons\info (1).png">
                         </button>
@@ -99,7 +96,7 @@
                             <td class="countryFlag"></td>
                         </tr>
                         <tr>
-                            <td >Region: </td>
+                            <td>Region: </td>
                             <td class="value" id="region"></td>
                         </tr>
                         <tr>
@@ -113,17 +110,15 @@
                         <tr>
                             <td colspan="100%" class="title">Life Expectancy</td>
                         </tr>
-                        <tr colspan="100%" id="lifeETable">
-                            <td>
-                                <table>
+                        <tr>
+                            <tr>
+                                <table class="table" id="lifeETable">
                                     <tr>
-                                        <td>Male: </td>
                                         <td class="value" id="maleLE"></td>
-                                        <td>Female: </td>
                                         <td class="value" id="femaleLE"></td>
                                     </tr>
                                 </table>
-                            <td>
+                            <tr>
                         </tr>
                     </table> 
                 </div>
@@ -158,9 +153,17 @@
                         <tr>
                             <table>
                                 <tr>
-                                    <td id="localCurrency"></td>
+                                    <td>
+                                        <select class="currencySelect" id="localCurrency">
+                                            <option>...</option>
+                                        </select>
+                                    </td>
                                     <td> > </td>
-                                    <td class="value" id="exchangeCurrency"></td>
+                                    <td class="value">
+                                        <select class="currencySelect" id="exchangeCurrency">
+                                            <option>...</option>
+                                        </select>
+                                    </td>
                                     <td> 
                                         <input type="number" id="convertAmount">
                                     </td>
@@ -177,63 +180,52 @@
                     </table> 
                 </div>
 
-                <div class="display" id="weatherDisplay">
-        
-                    <table class="table" id="financialTable">
+                <div class="display" id="weatherDisplay">       
+                    <table class="table" id="weatherTable">
                         <tr>
-                            <td colspan="100%" class="title">Weather</td>
+                            <td colspan="100%" class="title" id="weatherTitle">Weather</td>
                         </tr>
-                        <tr colspan="100%">
-                            <td>Current Location: </td>
-                            <td class="value" id="currentWLocation"></td>
-                            <td class="countryFlag"></td>
+                        <tr id="weatherLocation">
+                            <td colspan="100%" style="font-size: 16px" id="currentWLocation"></td>
                         </tr>
-                        <tr colspan="100%">
-                            <td>Current conditions: </td>
-                            <td class="value" id="condition"></td>
-                            <td class="value" id="conditionIcon"></td>
+                        <tr id="currentConditions">
+                            <td colspan="33%" class="value" id="condition"></td>
+                            <td colspan="33%" class="value" id="currentTemp"></td>
+                            <td colspan="33%" class="value" id="conditionIcon"></td>
                         </tr>
                         <tr>
-                            <td>Current Temp: </td>
-                            <td class="value" id="currentTemp"></td>
-                            <td>Feels Like: </td>
-                            <td class="value" id="feelsLike"></td>
+                            <td colspan="100%" class="title">Seven Day Forecast</td>
                         </tr>
                         <tr>
-                            <td colspan="100%" class="title"><b>7 Day Forecast</b></td>
-                        </tr>
-                        <tr id="sevenDayForecast">
-                            <td colspan="100%">
-                                <table>
-                                    <tr>
-                                        <td class="value" id="dayOneIcon"></td>
-                                        <td class="value" id="dayTwoIcon"></td>
-                                        <td class="value" id="dayThreeIcon"></td>
-                                        <td class="value" id="dayFourIcon"></td>
-                                        <td class="value" id="dayFiveIcon"></td>
-                                        <td class="value" id="daySixIcon"></td>
-                                        <td class="value" id="daySevenIcon"></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="value" id="dayOneTemp"></td>
-                                        <td class="value" id="dayTwoTemp"></td>
-                                        <td class="value" id="dayThreeTemp"></td>
-                                        <td class="value" id="dayFourTemp"></td>
-                                        <td class="value" id="dayFiveTemp"></td>
-                                        <td class="value" id="daySixTemp"></td>
-                                        <td class="value" id="daySevenTemp"></td>                           
-                                    </tr>
-                                    <tr>
-                                        <td class="value" id="dayOneDate"></td>
-                                        <td class="value" id="dayTwoDate"></td>
-                                        <td class="value" id="dayThreeDate"></td>
-                                        <td class="value" id="dayFourDate"></td>
-                                        <td class="value" id="dayFiveDate"></td>
-                                        <td class="value" id="daySixDate"></td>
-                                        <td class="value" id="daySevenDate"></td>                           
-                                    </tr>
-                                </table>
-                            <td>
+                            <table class="table" id="sevenDayForecast">
+                                <tr>
+                                    <td class="value" id="dayOneIcon"></td>
+                                    <td class="value" id="dayTwoIcon"></td>
+                                    <td class="value" id="dayThreeIcon"></td>
+                                    <td class="value" id="dayFourIcon"></td>
+                                    <td class="value" id="dayFiveIcon"></td>
+                                    <td class="value" id="daySixIcon"></td>
+                                    <td class="value" id="daySevenIcon"></td>
+                                </tr>
+                                <tr>
+                                    <td class="value" id="dayOneTemp"></td>
+                                    <td class="value" id="dayTwoTemp"></td>
+                                    <td class="value" id="dayThreeTemp"></td>
+                                    <td class="value" id="dayFourTemp"></td>
+                                    <td class="value" id="dayFiveTemp"></td>
+                                    <td class="value" id="daySixTemp"></td>
+                                    <td class="value" id="daySevenTemp"></td>                           
+                                </tr>
+                                <tr>
+                                    <td class="value" id="dayOneDate"></td>
+                                    <td class="value" id="dayTwoDate"></td>
+                                    <td class="value" id="dayThreeDate"></td>
+                                    <td class="value" id="dayFourDate"></td>
+                                    <td class="value" id="dayFiveDate"></td>
+                                    <td class="value" id="daySixDate"></td>
+                                    <td class="value" id="daySevenDate"></td>                           
+                                </tr>
+                            </table>
                         </tr>
                     </table> 
                 </div>
@@ -242,7 +234,8 @@
 
                     <button class="hideButton">Hide</button>
 
-                    <div id="newsNav">                      
+                    <div class="title" id="newsNav"> 
+                        News                     
                         <select id="newsCategory">
                             <option value="top">Top</option>
                             <option value="business">Business</option>
@@ -257,10 +250,9 @@
                             <option value="tourism">Tourism</option>
                             <option value="tourism">World</option>
                         </select>
-                        <p id="newsTitle">News</p>
                     </div>
-                    <div id="newsScroll" tabindex="0">
-                        <ul class="multiList" id="newsList">
+                    <div class="scroller" id="newsScroll">
+                        <ul class="multiList" id="newsList" >
                             
                         </ul>
                     </div>
@@ -268,21 +260,20 @@
 
                 <div class="display" id="eventDisplay">
                     <button class="hideButton">Hide</button>
-                    <div id="eventNavTitle">
+                    <div class="title" id="eventNavTitle">
                         Events
                     </div>
-                    <div id="eventNav">                      
+                    <div id="eventNav">                     
                         <select id="eventCategory">
-                            <option>Category: </option>
-                            <option value="sport">Sport</option>
                             <option value="music">Music</option>
+                            <option value="sport">Sport</option>
                             <option value="theatre">Theatre</option>
                             <option value="comedy">Comedy</option>
                         </select>
                         <input type="date" id="eventDate">
                         <button id="eventSearch">&#x1F50E</button>
                     </div>
-                    <div id="eventScroll">
+                    <div class="scroller" id="eventScroll">
                         <ul class="multiList" id="eventList">
 
                         </ul>
@@ -308,7 +299,7 @@
                 <img class="checkIcon" src="dependencies\Icons\theater.png">
             </button>        
         </div>  
-        <div id="cityAlert">Click on a city to reveal more info!</div> 
+        <div id="cityAlert">Click on a city to reveal more info.</div> 
     </div>
 
     <script type="application/javascript" src="js/jquery-3.6.4.min.js"></script>

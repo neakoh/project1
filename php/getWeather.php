@@ -5,7 +5,7 @@
 
 	$executionStartTime = microtime(true);
     $location = str_replace(' ', '%20', $_REQUEST['location']);
-	$url= 'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/' . $location .'?unitGroup=metric&key=59FF2JVZVX6FLRK4E39MDWAY4&contentType=json';
+	$url= 'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/' . $location .',' . $_REQUEST['countryCode'] . '?unitGroup=metric&key=59FF2JVZVX6FLRK4E39MDWAY4&contentType=json';
 	$ch = curl_init();
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
